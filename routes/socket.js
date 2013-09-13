@@ -2,6 +2,8 @@
  * Serve content over a socket
  */
 // Keep track of which names are used so that there are no duplicates
+http = require('http');
+
 var userNames = (function () {
   var userNames = {};
 
@@ -51,14 +53,128 @@ var userNames = (function () {
   };
 }());
 
-module.exports = function (socket) {
-  var name = userNames.getGuestName();
+// Biblia API object
+var biblia = (function () {
+  var API_URL = 'http://api.biblia.com/v1/bible/content/LEB.txt';
+  var API_KEY = "6936276c430fe411a35bb1f6ae786c19";
 
+  var getFullReference = function(textToScan) {
+    textToScan = textToScan[0].toUpperCase() + textToScan.slice(1);
+    var api_url = "http://api.biblia.com/v1/bible/scan/";
+    var result = 'not set';
+    $.ajax({
+      url: api_url,
+      type: "GET",
+      data: { key: API_KEY, text: textToScan },
+      async: false,
+      success: function(data) {
+        if (data.results.length > 0) {
+          result = data.results[0].passage;  
+        } else {
+          result = false;
+        }
+      }
+    });
+    if (!result) return result;
+    return result.replace("–","-"); // replace long dash with regular hyphen
+  };
+  var getPassage = function(fullRef) {
+    console.log("fetching passage");
+    var mergedParams = {
+      key: API_KEY,
+      passage: fullRef,
+      style: "orationOneVersePerLine"
+    }
+    var result = false;
+    $.extend(mergedParams, params);
+    $.ajax({
+      url: api_url,
+      type: "GET",
+      data: mergedParams,
+      async: false,
+      success: function(data) {
+        // console.log(data.split("\n"));
+        var refParts = data.split("\n");
+        var fullRefWithVersion = refParts[0].replace("–","-"); // replace long dash with regular hyphen
+        var passageText = refParts.slice(1).join("<br>").replace(/([0-9]+)/g, "<sup>$1</sup>");
+        // successCallback(fullRefWithVersion, passageText);
+        result = {
+          passage: fullRefWithVersion,
+          text: passageText
+        }
+      }
+    });
+
+    return result;
+  }
+  var parseFullReference = function(fullRef) {
+    var regex = /(((1|2) )?([A-Za-z ]+)) ([0-9]{1,3})/,
+      matches = fullRef.match(regex);
+    if (matches && matches.length > 5) {
+      return {
+        book: matches[1],
+        chapter: matches[5]
+      };
+    } else {
+      return null;
+    }
+  };
+
+  return {
+    getFullReference: getFullReference,
+    getPassage: getPassage,
+    parseFullReference: parseFullReference,
+
+  };
+}());
+
+// stored passages
+var passages = [];
+
+module.exports = function (socket) {
   // send new user their name and list of users
+  // send existing passages
+  var name = userNames.getGuestName();
   socket.emit('init', {
-  	name: name,
-  	users: userNames.get()
+    name: name,
+    users: userNames.get(),
+    passages: passages
   });
+
+  /** Bible passages stuff **/
+  socket.on('add:passage', function(data, fn) {
+    // get full reference
+    var fullReference = biblia.getFullReference(data.userPassageRef);
+    if (!fullReference) {
+      fn(false, "Invalid reference");
+    } else {
+      // get the passage text
+      var passageResult = biblia.getPassage(fullReference);
+      if (!passageResult) {
+        fn(false, "Error fetching passage");
+      } else {
+        passages.push(passageResult);  
+        // broadcast the fetched data
+        socket.broadcast.emit('add:passage', passageResult);
+      }
+    }
+  });
+
+  socket.on('remove:passage', function(fullReference) {
+    var i, passage;
+    for (i=0; i < passages.length; i++) {
+      passage = passages[i];
+      if (fullReference === passage.passage) {
+        passages.splice(i, 1);
+        break;
+      }
+    }
+    socket.broadcast.emit('remove:passage', {
+      passage: fullReference
+    });
+  });
+
+  /** Chatroom socket stuff **/
 
   // notify other clients that new user has joined
   socket.broadcast.emit('user:join', {

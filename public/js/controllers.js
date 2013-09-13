@@ -7,8 +7,35 @@ angular.module('myApp.controllers', []).
     socket.on('init', function (data) {
       $scope.name = data.name;
       $scope.users = data.users;
+      $scope.passages = data.passages;
     });
 
+    /* CRBS stuff */
+    $scope.addPassage = function() {
+      console.log($scope.userPassageRef);
+      socket.emit('add:passage', { userPassageRef: $scope.userPassageRef }, function(result, msg) {
+        if (!result) {
+          alert(msg);
+        }
+      });
+    }
+
+    socket.on('add:passage', function(data) {
+      $scope.passages.push(data);
+    });
+
+    socket.on('remove:passage', function(data) {
+      var i, passage;
+      for (i=0; i < $scope.passages.length; i++) {
+        passage = $scope.passages[i];
+        if (data.passage === passage.passage) {
+          $scope.passages.splice(i, 1);
+          break;
+        }
+      }
+    });
+
+    /** Chatroom stuff **/
     socket.on('send:message', function(message) {
       $scope.messages.push(message);
     });

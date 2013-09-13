@@ -1,29 +1,33 @@
 extends layout
 
 block body
-  div(ng-controller='AppCtrl', ng-init='messages = []')
-    .col
-      h3 Messages
-      .overflowable
-        p(ng-repeat='message in messages') {{message.user}}: {{message.text}}
+  div.container(ng-controller='AppCtrl', ng-init='messages = []')
+    div.row
+      div.col-md-9
+        h1 CRBS
+        form(ng-submit='addPassage()')
+          input(ng-model='userPassageRef')
+          input.btn.btn-sm.btn-primary(type='submit', value='Add')
+        div.panel
+          h3 Passages
+      div.col-md-3
+        h3 Users
+        #user-list.panel.overflowable
+          p(ng-repeat='user in users') {{user}}
+        h3 Messages
+        #message-list.panel.overflowable
+          p(ng-repeat='message in messages') {{message.user}}: {{message.text}}
+        form(ng-submit='sendMessage()')
+          input.input-block-level(ng-model='message')
+          input.btn.btn-sm.btn-info(type='submit', value='Send')
+        h3 Change your name
+        p Your current user name is {{name}}
+        form(ng-submit='changeName()')
+          input(ng-model='newName')
+          input.btn.btn-sm.btn-primary(type='submit', value='Change name')
 
-    .col
-      h3 Users
-      .overflowable
-        p(ng-repeat='user in users') {{user}}
-
-    .clr
-      form(ng-submit='sendMessage()')
-        | Message:
-        input(size='60', ng-model='message')
-        input(type='submit', value='Send')
-    .clr
-      h3 Change your name
-      p Your current user name is {{name}}
-      form(ng-submit='changeName()')
-        input(ng-model='newName')
-        input(type='submit', value='Change name')
-
+  script(src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js')
+  script(src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
   script(src='/socket.io/socket.io.js')
   script(src='bower_components/angular/angular.js')
   script(src='bower_components/angular-socket-io/socket.js')
