@@ -2,7 +2,6 @@
  * Serve content over a socket
  */
 // Keep track of which names are used so that there are no duplicates
-http = require('http');
 
 var userNames = (function () {
   var userNames = {};
