@@ -16,8 +16,19 @@ angular.module('myApp.controllers', []).
       socket.emit('add:passage', { userPassageRef: $scope.userPassageRef }, function(result, msg) {
         if (!result) {
           alert(msg);
+        } else {
+          $scope.passages.push(result);
+          $scope.userPassageRef = "";
         }
       });
+    }
+
+    $scope.removePassage = function(index) {
+      // update this client's data
+      var removedPassage = $scope.passages.splice(index, 1)[0];
+
+      // emit to server
+      socket.emit('remove:passage', removedPassage.passage);
     }
 
     socket.on('add:passage', function(data) {

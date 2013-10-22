@@ -1,30 +1,45 @@
 extends layout
 
 block body
-  div.container(ng-controller='AppCtrl', ng-init='messages = []')
+  div.container(ng-controller='AppCtrl', ng-init='messages = []; showSidebar = true')
     div.row
-      div.col-md-9
+      div.col-md-8
         h1 CRBS
         form(ng-submit='addPassage()')
-          input(ng-model='userPassageRef')
-          input.btn.btn-sm.btn-primary(type='submit', value='Add')
-        div.panel
-          h3 Passages
-      div.col-md-3
-        h3 Users
-        #user-list.panel.overflowable
-          p(ng-repeat='user in users') {{user}}
-        h3 Messages
-        #message-list.panel.overflowable
-          p(ng-repeat='message in messages') {{message.user}}: {{message.text}}
-        form(ng-submit='sendMessage()')
-          input.input-block-level(ng-model='message')
-          input.btn.btn-sm.btn-info(type='submit', value='Send')
-        h3 Change your name
-        p Your current user name is {{name}}
-        form(ng-submit='changeName()')
-          input(ng-model='newName')
-          input.btn.btn-sm.btn-primary(type='submit', value='Change name')
+          div.input-group
+            input.form-control(ng-model='userPassageRef')
+            span.input-group-btn
+              input.btn.btn-primary(type='submit', value='Add')
+    div.panel
+      h3 Passages
+      ul.list-inline
+        li.col-md-4(ng-repeat='passage in passages')
+          a.close(ng-click="removePassage($index)") &times;
+          h4 {{passage.passage}}
+          p.passage-block(ng-bind-html-unsafe="passage.text")
+    div.floating-toggle(ng-show="!showSidebar")
+      button.btn(ng-click="showSidebar=true")
+        i.icon-comment
+    div.floating-sidebar.well(ng-show="showSidebar")
+      a.close(ng-click="showSidebar = false") &times;
+      h3 Users
+      #user-list.panel.overflowable
+        p(ng-repeat='user in users') {{user}}
+      h3 Messages
+      #message-list.panel.overflowable
+        p(ng-repeat='message in messages') {{message.user}}: {{message.text}}
+      form(ng-submit='sendMessage()')
+        div.input-group.input-group-sm
+          input.form-control(ng-model='message')
+          span.input-group-btn
+            input.btn.btn-sm.btn-primary(type='submit', value='Send')
+      h3 Change your name
+      p Your current user name is {{name}}
+      form(ng-submit='changeName()')
+        div.input-group.input-group-sm
+          input.form-control(ng-model='newName')
+          span.input-group-btn
+            input.btn.btn-default(type='submit', value='Change name')
 
   script(src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js')
   script(src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")

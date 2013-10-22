@@ -1,3 +1,4 @@
+$ = require('jquery');
 /*
  * Serve content over a socket
  */
@@ -57,42 +58,45 @@ var biblia = (function () {
   var API_URL = 'http://api.biblia.com/v1/bible/content/LEB.txt';
   var API_KEY = "6936276c430fe411a35bb1f6ae786c19";
 
-  var getFullReference = function(textToScan) {
+  var getFullReference = function(textToScan, successCallback, errorCallback) {
     textToScan = textToScan[0].toUpperCase() + textToScan.slice(1);
     var api_url = "http://api.biblia.com/v1/bible/scan/";
     var result = 'not set';
-    $.ajax({
-      url: api_url,
+    console.log(textToScan)
+    // $.getJSON(api_url, { key: API_KEY, text: textToScan }, function(data) {console.log(data)});
+    $.ajax(api_url, {
       type: "GET",
       data: { key: API_KEY, text: textToScan },
-      async: false,
+      contentType: "application/json",
       success: function(data) {
+        console.log(data);
         if (data.results.length > 0) {
-          result = data.results[0].passage;  
+          result = data.results[0].passage;
+          successCallback(result.replace("–","-"));
         } else {
-          result = false;
+          errorCallback("Reference not found in " + textToScan);
         }
+      },
+      error: function(xhr, textStatus, errorThrown) {
+        errorCallback("Status " + textStatus + ": " + errorThrown);
       }
     });
-    if (!result) return result;
-    return result.replace("–","-"); // replace long dash with regular hyphen
   };
-  var getPassage = function(fullRef) {
-    console.log("fetching passage");
+  var getPassage = function(fullRef, params, successCallback, errorCallback) {
+    console.log("fetching passage "+ fullRef);
     var mergedParams = {
       key: API_KEY,
       passage: fullRef,
       style: "orationOneVersePerLine"
     }
     var result = false;
-    $.extend(mergedParams, params);
+    if (params) $.extend(mergedParams, params);
+
     $.ajax({
-      url: api_url,
+      url: API_URL,
       type: "GET",
       data: mergedParams,
-      async: false,
       success: function(data) {
-        // console.log(data.split("\n"));
         var refParts = data.split("\n");
         var fullRefWithVersion = refParts[0].replace("–","-"); // replace long dash with regular hyphen
         var passageText = refParts.slice(1).join("<br>").replace(/([0-9]+)/g, "<sup>$1</sup>");
@@ -101,10 +105,12 @@ var biblia = (function () {
           passage: fullRefWithVersion,
           text: passageText
         }
+        successCallback(result);
+      },
+      error: function(xhr, textStatus, errorThrown) {
+        errorCallback("Status " + textStatus + ": " + errorThrown);
       }
     });
-
-    return result;
   }
   var parseFullReference = function(fullRef) {
     var regex = /(((1|2) )?([A-Za-z ]+)) ([0-9]{1,3})/,
@@ -142,21 +148,28 @@ module.exports = function (socket) {
 
   /** Bible passages stuff **/
   socket.on('add:passage', function(data, fn) {
-    // get full reference
-    var fullReference = biblia.getFullReference(data.userPassageRef);
-    if (!fullReference) {
-      fn(false, "Invalid reference");
-    } else {
-      // get the passage text
-      var passageResult = biblia.getPassage(fullReference);
-      if (!passageResult) {
-        fn(false, "Error fetching passage");
-      } else {
-        passages.push(passageResult);  
-        // broadcast the fetched data
-        socket.broadcast.emit('add:passage', passageResult);
-      }
+    var errorCallback = function(errorMessage) {
+      fn(false, errorMessage);
     }
+    // get full reference
+    biblia.getFullReference(data.userPassageRef,
+      function(fullReference) {
+        // fetch actual passage
+        biblia.getPassage(fullReference, {}, function(passageResult) {
+          if (!passageResult) {
+            fn(false, "Error fetching passage " + fullReference);
+          } else {
+            passages.push(passageResult);
+            // send result back to client
+            fn(passageResult);
+            
+            // broadcast the fetched data
+            socket.broadcast.emit('add:passage', passageResult);
+          }
+        }, errorCallback);
+      },
+      errorCallback
+    );
   });
 
   socket.on('remove:passage', function(fullReference) {
