@@ -8,6 +8,7 @@
   ],
   "dependencies": {
     "angular": "~1.0.7",
-    "angular-socket-io": "~0.0.2"
+    "angular-socket-io": "~0.0.2",
+    "jquery": "~1.9"
   }
 }
