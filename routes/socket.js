@@ -91,7 +91,7 @@ var biblia = (function () {
     }
     var result = false;
     if (params) $.extend(mergedParams, params);
-
+    var parsedRef = parseFullReference(fullRef);
     $.ajax({
       url: API_URL,
       type: "GET",
@@ -100,10 +100,12 @@ var biblia = (function () {
         var refParts = data.split("\n");
         var fullRefWithVersion = refParts[0].replace("–","-"); // replace long dash with regular hyphen
         var passageText = refParts.slice(1).join("<br>").replace(/([0-9]+)/g, "<sup>$1</sup>");
-        // successCallback(fullRefWithVersion, passageText);
         result = {
           passage: fullRefWithVersion,
-          text: passageText
+          text: passageText,
+          book: parsedRef.book,
+          chapter: parsedRef.chapter,
+          verses: fullRef.replace(parsedRef.book + " " + parsedRef.chapter + ":", "")
         }
         successCallback(result);
       },
@@ -135,7 +137,9 @@ var biblia = (function () {
 
 // stored passages
 var passages = [];
-
+var genericErrorCallback = function(errorMessage, fn) {
+  fn(false, errorMessage);
+}
 module.exports = function (socket) {
   // send new user their name and list of users
   // send existing passages
@@ -148,9 +152,6 @@ module.exports = function (socket) {
 
   /** Bible passages stuff **/
   socket.on('add:passage', function(data, fn) {
-    var errorCallback = function(errorMessage) {
-      fn(false, errorMessage);
-    }
     // get full reference
     biblia.getFullReference(data.userPassageRef,
       function(fullReference) {
@@ -166,9 +167,13 @@ module.exports = function (socket) {
             // broadcast the fetched data
             socket.broadcast.emit('add:passage', passageResult);
           }
-        }, errorCallback);
+        }, function(errorMessage) {
+          genericErrorCallback(errorMessage, fn);
+        });
       },
-      errorCallback
+      function(errorMessage) {
+        genericErrorCallback(errorMessage, fn);
+      }
     );
   });
 
@@ -183,6 +188,65 @@ module.exports = function (socket) {
     }
     socket.broadcast.emit('remove:passage', {
       passage: fullReference
+    });
+  });
+
+  socket.on('prevchapter', function(data, fn) {
+    var parsedRef = biblia.parseFullReference(data.passage.passage);
+    var newChapter = Math.max(1, parseInt(parsedRef.chapter) - 1);
+    var newRef = parsedRef.book + " " + newChapter;
+    biblia.getPassage(newRef, {}, function(passageResult) {
+      if (!passageResult) {
+        fn(false, "Error fetching passage: " + newRef);
+      } else {
+        passages[data.index] = passageResult;
+        // send result back to client
+        fn(passageResult);
+        
+        // broadcast the fetched data
+        socket.broadcast.emit('update:passage', {index: data.index, passage: passageResult});
+      }
+    }, function(errorMessage) {
+      genericErrorCallback(errorMessage, fn);
+    });
+  });
+
+  socket.on('nextchapter', function(data, fn) {
+    var parsedRef = biblia.parseFullReference(data.passage.passage);
+    var newChapter = parseInt(parsedRef.chapter) + 1;
+    var newRef = parsedRef.book + " " + newChapter;
+    biblia.getPassage(newRef, {}, function(passageResult) {
+      if (!passageResult) {
+        fn(false, "Error fetching passage: " + newRef);
+      } else {
+        passages[data.index] = passageResult;
+        // send result back to client
+        fn(passageResult);
+        
+        // broadcast the fetched data
+        socket.broadcast.emit('update:passage', {index: data.index, passage: passageResult});
+      }
+    }, function(errorMessage) {
+      genericErrorCallback(errorMessage, fn);
+    });
+  });
+
+  socket.on('expandchapter', function(data, fn) {
+    var parsedRef = biblia.parseFullReference(data.passage.passage);
+    var newRef = parsedRef.book + " " + parsedRef.chapter;
+    biblia.getPassage(newRef, {}, function(passageResult) {
+      if (!passageResult) {
+        fn(false, "Error fetching passage: " + newRef);
+      } else {
+        passages[data.index] = passageResult;
+        // send result back to client
+        fn(passageResult);
+        
+        // broadcast the fetched data
+        socket.broadcast.emit('update:passage', {index: data.index, passage: passageResult});
+      }
+    }, function(errorMessage) {
+      genericErrorCallback(errorMessage, fn);
     });
   });
 

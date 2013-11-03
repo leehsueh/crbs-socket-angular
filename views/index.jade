@@ -10,12 +10,22 @@ block body
             input.form-control(ng-model='userPassageRef')
             span.input-group-btn
               input.btn.btn-primary(type='submit', value='Add')
+    hr
     div.panel
-      h3 Passages
       ul.list-inline
         li.col-md-4(ng-repeat='passage in passages')
           a.close(ng-click="removePassage($index)") &times;
-          h4 {{passage.passage}}
+          h4.text-center.no-margin-bottom {{passage.passage}}
+          ul.list-inline.text-center
+            li(ng-hide="passage.chapter == '1'")
+              small
+                a(ng-click="prevChapter($index)") Previous
+            li
+              small
+                a(ng-click="expandChapter($index)") Expand
+            li
+              small
+                a(ng-click="nextChapter($index)") Next
           p.passage-block(ng-bind-html-unsafe="passage.text")
     div.floating-toggle(ng-show="!showSidebar")
       button.btn(ng-click="showSidebar=true")

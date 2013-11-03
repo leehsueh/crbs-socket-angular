@@ -26,7 +26,14 @@
 .floating-toggle {
 	width: 50px;
 }
+.panel:after{ content: "."; display: block; height: 0; font-size:0; clear: both; visibility:hidden; }
 .passage-block {
 	max-height: 300px;
 	overflow-y: scroll;
+}
+.passage-block .list-inline {
+	margin-bottom: 10px;
+}
+.no-margin-bottom {
+	margin-bottom: 0;
 }

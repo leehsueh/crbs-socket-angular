@@ -31,7 +31,32 @@ angular.module('myApp.controllers', []).
       socket.emit('remove:passage', removedPassage.passage);
     }
 
+    $scope.updateChapter = function(index, socketEvent) {
+      var passage = $scope.passages[index];
+      socket.emit(socketEvent, { passage: passage, index: index }, function(result, msg) {
+        console.log(result);
+        if (result) {
+          $scope.passages[index] = result;
+        } else {
+          alert(msg);
+        }
+      });
+    }
+
+    $scope.prevChapter = function(index) {
+      $scope.updateChapter(index, 'prevchapter');
+    }
+
+    $scope.nextChapter = function(index) {
+      $scope.updateChapter(index, 'nextchapter');
+    }
+
+    $scope.expandChapter = function(index) {
+      $scope.updateChapter(index, 'expandchapter');
+    }
+
     socket.on('add:passage', function(data) {
+      console.log(data);
       $scope.passages.push(data);
     });
 
@@ -44,6 +69,11 @@ angular.module('myApp.controllers', []).
           break;
         }
       }
+    });
+
+    socket.on('update:passage', function(data)  {
+      console.log(data);
+      $scope.passages[data.index] = data.passage;
     });
 
     /** Chatroom stuff **/
