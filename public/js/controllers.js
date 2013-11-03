@@ -3,7 +3,7 @@
 /* Controllers */
 
 angular.module('myApp.controllers', []).
-  controller('AppCtrl', function ($scope, socket) {
+  controller('AppCtrl', function ($scope, socket, $timeout) {
     socket.on('init', function (data) {
       $scope.name = data.name;
       $scope.users = data.users;
@@ -79,6 +79,9 @@ angular.module('myApp.controllers', []).
     /** Chatroom stuff **/
     socket.on('send:message', function(message) {
       $scope.messages.push(message);
+      $timeout(function() {
+        $("#message-list").scrollTop($("#message-list")[0].scrollHeight);
+      });
     });
 
     socket.on('change:name', function(data) {
@@ -148,5 +151,9 @@ angular.module('myApp.controllers', []).
 
       // clear message box
       $scope.message = '';
+
+      $timeout(function() {
+        $("#message-list").scrollTop($("#message-list")[0].scrollHeight);
+      });
     }
   });
