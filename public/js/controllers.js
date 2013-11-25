@@ -31,9 +31,11 @@ angular.module('myApp.controllers', []).
       socket.emit('remove:passage', removedPassage.passage);
     }
 
-    $scope.updateChapter = function(index, socketEvent) {
+    $scope.updatePassage = function(index, socketEvent, params) {
       var passage = $scope.passages[index];
-      socket.emit(socketEvent, { passage: passage, index: index }, function(result, msg) {
+      params = $.extend(params, { passage: passage, index: index });
+      console.log(params);
+      socket.emit(socketEvent, params, function(result, msg) {
         console.log(result);
         if (result) {
           $scope.passages[index] = result;
@@ -44,15 +46,19 @@ angular.module('myApp.controllers', []).
     }
 
     $scope.prevChapter = function(index) {
-      $scope.updateChapter(index, 'prevchapter');
+      $scope.updatePassage(index, 'prevchapter');
     }
 
     $scope.nextChapter = function(index) {
-      $scope.updateChapter(index, 'nextchapter');
+      $scope.updatePassage(index, 'nextchapter');
     }
 
     $scope.expandChapter = function(index) {
-      $scope.updateChapter(index, 'expandchapter');
+      $scope.updatePassage(index, 'expandchapter');
+    }
+
+    $scope.changeTranslation = function(index) {
+      $scope.updatePassage(index, 'changetranslation', {translation: $scope.passages[index].translation});
     }
 
     socket.on('add:passage', function(data) {

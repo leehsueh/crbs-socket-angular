@@ -13,9 +13,10 @@ block body
     hr
     div.panel
       ul.list-inline
-        li.col-md-4(ng-repeat='passage in passages')
+        li.col-md-4.passage-block(ng-repeat='passage in passages')
           a.close(ng-click="removePassage($index)") &times;
           h4.text-center.no-margin-bottom {{passage.passage}}
+            select(ng-change="changeTranslation($index)", ng-model="passage.translation", ng-options="abbrv for abbrv in ['LEB','KJV','YLT']")
           ul.list-inline.text-center
             li(ng-hide="passage.chapter == '1'")
               small
@@ -26,7 +27,7 @@ block body
             li
               small
                 a(ng-click="nextChapter($index)") Next
-          p.passage-block(ng-bind-html-unsafe="passage.text")
+          p(ng-bind-html-unsafe="passage.text")
     div.floating-toggle(ng-show="!showSidebar")
       button.btn(ng-click="showSidebar=true")
         i.icon-comment

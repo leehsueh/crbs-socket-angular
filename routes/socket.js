@@ -55,7 +55,7 @@ var userNames = (function () {
 
 // Biblia API object
 var biblia = (function () {
-  var API_URL = 'http://api.biblia.com/v1/bible/content/LEB.txt';
+  var API_URL = 'http://api.biblia.com/v1/bible/content/{version}.txt';
   var API_KEY = "6936276c430fe411a35bb1f6ae786c19";
 
   var getFullReference = function(textToScan, successCallback, errorCallback) {
@@ -89,22 +89,26 @@ var biblia = (function () {
       passage: fullRef,
       style: "orationOneVersePerLine"
     }
+    
+    var translation = params.translation || "LEB";
+    url = API_URL.replace("{version}", translation);
     var result = false;
     if (params) $.extend(mergedParams, params);
     var parsedRef = parseFullReference(fullRef);
     $.ajax({
-      url: API_URL,
+      url: url,
       type: "GET",
       data: mergedParams,
       success: function(data) {
+        console.log(data.passage);
         var refParts = data.split("\n");
-        var fullRefWithVersion = refParts[0].replace("–","-"); // replace long dash with regular hyphen
         var passageText = refParts.slice(1).join("<br>").replace(/([0-9]+)/g, "<sup>$1</sup>");
         result = {
-          passage: fullRefWithVersion,
+          passage: fullRef.replace("–","-"),
           text: passageText,
           book: parsedRef.book,
           chapter: parsedRef.chapter,
+          translation: translation,
           verses: fullRef.replace(parsedRef.book + " " + parsedRef.chapter + ":", "")
         }
         successCallback(result);
@@ -249,6 +253,25 @@ module.exports = function (socket) {
       genericErrorCallback(errorMessage, fn);
     });
   });
+
+  socket.on('changetranslation', function(data, fn) {
+    console.log("In changetranslation: ");
+    console.log(data.passage.passage);
+    biblia.getPassage(data.passage.passage, {translation: data.translation}, function(passageResult) {
+      if (!passageResult) {
+        fn(false, "Error fetching passage: " + parsedRef);
+      } else {
+        passages[data.index] = passageResult;
+        // send result back to client
+        fn(passageResult);
+        
+        // broadcast the fetched data
+        socket.broadcast.emit('update:passage', {index: data.index, passage: passageResult});
+      }
+    }, function(errorMessage) {
+      genericErrorCallback(errorMessage, fn);
+    });
+  })
 
   /** Chatroom socket stuff **/
 

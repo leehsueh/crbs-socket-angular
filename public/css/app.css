@@ -34,6 +34,10 @@
 .passage-block .list-inline {
 	margin-bottom: 10px;
 }
+.passage-block h4 select {
+	display: inline-block;
+	margin-left: 10px;
+}
 .no-margin-bottom {
 	margin-bottom: 0;
 }
