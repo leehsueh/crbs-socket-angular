@@ -57,7 +57,9 @@ var userNames = (function () {
 var biblia = (function () {
   var API_URL = 'http://api.biblia.com/v1/bible/content/{version}.txt';
   var API_KEY = "6936276c430fe411a35bb1f6ae786c19";
-
+  var ESV_KEY = "IP";
+  var ESV_API = 'http://www.esvapi.org/v2/rest/passageQuery?key=' + ESV_KEY + '&passage={passage}&include-footnotes=false&correct-quotes=true&include-passage-references=false';
+  
   var getFullReference = function(textToScan, successCallback, errorCallback) {
     textToScan = textToScan[0].toUpperCase() + textToScan.slice(1);
     var api_url = "http://api.biblia.com/v1/bible/scan/";
@@ -83,18 +85,41 @@ var biblia = (function () {
     });
   };
   var getPassage = function(fullRef, params, successCallback, errorCallback) {
+    fullRef = fullRef.replace("–","-");
     console.log("fetching passage "+ fullRef);
+    var parsedRef = parseFullReference(fullRef);
     var mergedParams = {
       key: API_KEY,
       passage: fullRef,
       style: "orationOneVersePerLine"
     }
     
-    var translation = params.translation || "LEB";
+    var translation = params.translation || "ESV";
     url = API_URL.replace("{version}", translation);
     var result = false;
+    if (translation == "ESV") {
+      $.ajax({
+        url: ESV_API.replace("{passage}", fullRef),
+        type: "GET",
+        success: function(data) {
+          result = {
+            passage: fullRef,
+            text: data,
+            book: parsedRef.book,
+            chapter: parsedRef.chapter,
+            translation: translation,
+            verses: fullRef.replace(parsedRef.book + " " + parsedRef.chapter + ":", "")
+          }
+          successCallback(result);
+        },
+        error: function(xhr, textStatus, errorThrown) {
+          errorCallback("Status " + textStatus + ": " + errorThrown);
+        }
+      });
+      return;
+    }
     if (params) $.extend(mergedParams, params);
-    var parsedRef = parseFullReference(fullRef);
+    
     $.ajax({
       url: url,
       type: "GET",
@@ -104,7 +129,7 @@ var biblia = (function () {
         var refParts = data.split("\n");
         var passageText = refParts.slice(1).join("<br>").replace(/([0-9]+)/g, "<sup>$1</sup>");
         result = {
-          passage: fullRef.replace("–","-"),
+          passage: fullRef,
           text: passageText,
           book: parsedRef.book,
           chapter: parsedRef.chapter,

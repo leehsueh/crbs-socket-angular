@@ -20,14 +20,24 @@
 	right: 5px;
 	bottom: 10px;
 }
-.floating-sidebar {
+.floating-sidebar.well {
 	width: 250px;
+	padding-top: 5px;
+}
+.floating-sidebar p {
+	font-size: 12px;
 }
 .floating-toggle {
 	width: 50px;
 }
 .panel:after{ content: "."; display: block; height: 0; font-size:0; clear: both; visibility:hidden; }
 .passage-block {
+	border: 1px solid #eee;
+}
+.list-inline > li.passage-block {
+	padding-left: 10px;
+}
+.passage-text {
 	max-height: 300px;
 	overflow-y: scroll;
 }
@@ -40,4 +50,13 @@
 }
 .no-margin-bottom {
 	margin-bottom: 0;
+}
+.esv-text .verse-num, .esv-text .chapter-num {
+	font-size: x-small;
+	font-weight: bold;
+	vertical-align: top;
+}
+.esv-text h3 {
+	font-size: 14px;
+	margin-top: 10px;
 }
