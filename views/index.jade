@@ -11,7 +11,7 @@ block body
             span.input-group-btn
               input.btn.btn-primary(type='submit', value='Add')
     hr
-    div.panel
+    div.panel.ng-cloak
       ul.list-inline
         li.col-md-4.passage-block(ng-repeat='passage in passages')
           a.close(ng-click="removePassage($index)") &times;
