@@ -59,7 +59,8 @@ var biblia = (function () {
   var API_KEY = "6936276c430fe411a35bb1f6ae786c19";
   var ESV_KEY = "IP";
   var ESV_API = 'http://www.esvapi.org/v2/rest/passageQuery?key=' + ESV_KEY + '&passage={passage}&include-footnotes=false&correct-quotes=true&include-passage-references=false';
-  
+  var BG_URL = 'http://www.biblegateway.com/passage/?search={passage}&version=NKJV&interface=print';
+
   var getFullReference = function(textToScan, successCallback, errorCallback) {
     textToScan = textToScan[0].toUpperCase() + textToScan.slice(1);
     var api_url = "http://api.biblia.com/v1/bible/scan/";
@@ -115,6 +116,31 @@ var biblia = (function () {
         error: function(xhr, textStatus, errorThrown) {
           errorCallback("Status " + textStatus + ": " + errorThrown);
         }
+      });
+      return;
+    }
+    if (translation == "NKJV") {
+      console.log("IN NKJV\n" + BG_URL.replace("{passage}", encodeURIComponent(fullRef)) + "\n")
+      $.ajax({
+        url: BG_URL.replace("{passage}", encodeURIComponent(fullRef)),
+        success: function(data) {
+          console.log(data);
+          var dataHtml = $(data);
+          result = {
+            passage: fullRef,
+            text: dataHtml.find(".passage").html(),
+            book: parsedRef.book,
+            chapter: parsedRef.chapter,
+            translation: translation,
+            verses: fullRef.replace(parsedRef.book + " " + parsedRef.chapter + ":", "")
+          }
+          successCallback(result);
+        },
+        error: function(xhr, textStatus, errorThrown) {
+          console.log("Status " + textStatus + ": " + errorThrown)
+          errorCallback("Status " + textStatus + ": " + errorThrown);
+        },
+        dataType: "html"
       });
       return;
     }
@@ -224,7 +250,7 @@ module.exports = function (socket) {
     var parsedRef = biblia.parseFullReference(data.passage.passage);
     var newChapter = Math.max(1, parseInt(parsedRef.chapter) - 1);
     var newRef = parsedRef.book + " " + newChapter;
-    biblia.getPassage(newRef, {}, function(passageResult) {
+    biblia.getPassage(newRef, {translation: data.translation}, function(passageResult) {
       if (!passageResult) {
         fn(false, "Error fetching passage: " + newRef);
       } else {
@@ -244,7 +270,7 @@ module.exports = function (socket) {
     var parsedRef = biblia.parseFullReference(data.passage.passage);
     var newChapter = parseInt(parsedRef.chapter) + 1;
     var newRef = parsedRef.book + " " + newChapter;
-    biblia.getPassage(newRef, {}, function(passageResult) {
+    biblia.getPassage(newRef, {translation: data.translation}, function(passageResult) {
       if (!passageResult) {
         fn(false, "Error fetching passage: " + newRef);
       } else {
@@ -263,7 +289,7 @@ module.exports = function (socket) {
   socket.on('expandchapter', function(data, fn) {
     var parsedRef = biblia.parseFullReference(data.passage.passage);
     var newRef = parsedRef.book + " " + parsedRef.chapter;
-    biblia.getPassage(newRef, {}, function(passageResult) {
+    biblia.getPassage(newRef, {translation: data.translation}, function(passageResult) {
       if (!passageResult) {
         fn(false, "Error fetching passage: " + newRef);
       } else {

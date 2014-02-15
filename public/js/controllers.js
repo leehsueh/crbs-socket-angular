@@ -33,7 +33,8 @@ angular.module('myApp.controllers', []).
 
     $scope.updatePassage = function(index, socketEvent, params) {
       var passage = $scope.passages[index];
-      params = $.extend(params, { passage: passage, index: index });
+      passage.loading = true
+      params = $.extend(params, { passage: passage, index: index, translation: passage.translation });
       console.log(params);
       socket.emit(socketEvent, params, function(result, msg) {
         console.log(result);
@@ -58,7 +59,7 @@ angular.module('myApp.controllers', []).
     }
 
     $scope.changeTranslation = function(index) {
-      $scope.updatePassage(index, 'changetranslation', {translation: $scope.passages[index].translation});
+      $scope.updatePassage(index, 'changetranslation');
     }
 
     socket.on('add:passage', function(data) {
