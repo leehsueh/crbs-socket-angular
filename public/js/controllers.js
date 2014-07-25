@@ -3,12 +3,16 @@
 /* Controllers */
 
 angular.module('myApp.controllers', []).
-  controller('AppCtrl', function ($scope, socket, $timeout) {
+  controller('AppCtrl', function ($scope, $sce, socket, $timeout) {
     socket.on('init', function (data) {
       $scope.name = data.name;
       $scope.users = data.users;
       $scope.passages = data.passages;
     });
+
+    $scope.trustedHtml = function(unsafeHtml) {
+      return $sce.trustAsHtml(unsafeHtml);
+    };
 
     /* CRBS stuff */
     $scope.addPassage = function() {

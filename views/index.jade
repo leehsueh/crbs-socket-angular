@@ -27,7 +27,7 @@ block body
             li
               small
                 a(ng-click="nextChapter($index)") Next
-          p.passage-text(ng-bind-html-unsafe="passage.text")
+          p.passage-text(ng-bind-html="trustedHtml(passage.text)")
           div.mask(ng-show="passage.loading")
             h4 Loading...
     div.floating-toggle(ng-show="!showSidebar")
@@ -58,6 +58,7 @@ block body
   script(src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
   script(src='/socket.io/socket.io.js')
   script(src='bower_components/angular/angular.js')
+  script(src='bower_components/angular-sanitize/angular-sanitize.js')
   script(src='bower_components/angular-socket-io/socket.js')
   script(src='js/app.js')
   script(src='js/services.js')
